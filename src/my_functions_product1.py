@@ -209,6 +209,8 @@ def processing_data_frame(output_field, sensitive_field, your_data_df, not_to_co
     
     #drop columns
     for item in not_to_consider_fields:
+        print(item)
+        print(sensitive_field)
         if item != sensitive_field:
             your_data_df = your_data_df.drop(item, axis=1)
             #print(item,'----',sensitive_field)
@@ -277,12 +279,19 @@ def enforcing_binary_output_sensitive(Y_df,output_field,output_label0, output_la
     return Ybin, Zbin
 
 #==============================================================================
-def read_process_data_output_bias(filename_str):   
+def read_process_data_output_bias(filename_str, input_option,cprediction_field_exists,cprediction_field,target_field, sensitive_field, not_to_consider_fields,sensitive_class0,sensitive_class1,target_label0,target_label1):   
     your_data_df, all_columns = reading_data(filename_str)  
-    cprediction_field_exists,cprediction_field,target_field, sensitive_field, your_data_df, not_to_consider_fields,sensitive_class0,sensitive_class1,target_label0,target_label1 = Inputting_from_the_user(all_columns,your_data_df)
-   
+    
+    if input_option == 'manual':
+        cprediction_field_exists,cprediction_field,target_field, sensitive_field, your_data_df, not_to_consider_fields,sensitive_class0,sensitive_class1,target_label0,target_label1 = Inputting_from_the_user(all_columns,your_data_df)
+
+        
+    
+    print('burasi1')
+    
     X_df, Y_df, Z_df = processing_data_frame(target_field, sensitive_field, your_data_df, not_to_consider_fields,sensitive_class0,sensitive_class1)    
  
+    print('burasi2')
     print('target field:{}'.format(target_field))
     if cprediction_field_exists == 'Y':
         print('current prediction field:{}'.format(cprediction_field))
@@ -521,7 +530,7 @@ def saving_performance_result(before_main_task_accuracy, before_p_rule_for_Y1,be
     return result_fname_y_pred_before_after,result_fname_acc_p_before_after
 
 #==============================================================================
-def Default_Classifier_arch(n_features):
+def Default_Classifier_arch4(n_features):
     inputs = Input(shape=(n_features,))
     dense1 = Dense(32, activation='relu')(inputs)
     dropout1 = Dropout(0.2)(dense1)
@@ -535,20 +544,41 @@ def Default_Classifier_arch(n_features):
     model = Model(inputs=[inputs], outputs=[outputs])
     return model    
 #==============================================================================
-def Default_Adversary_arch(inputs):
+def Default_Adversary_arch4(inputs):
     dense1 = Dense(32, activation='relu')(inputs)
     dense2 = Dense(32, activation='relu')(dense1)
     dense3 = Dense(32, activation='relu')(dense2)
     dense4 = Dense(32, activation="relu")(dense3)
     outputs = Dense(1, activation='sigmoid')(dense4)
     return Model(inputs=[inputs], outputs=outputs)   
+
+
 #==============================================================================
-def Default_main_task_adv_architecture(n_features):
-    main_task_arch = Default_Classifier_arch(n_features)
-    main_task_arch_json_string = main_task_arch.to_json()
+def Default_Classifier_arch1(n_features):
+    inputs = Input(shape=(n_features,))
+    outputs = Dense(1, activation='sigmoid')(inputs)
+    model = Model(inputs=[inputs], outputs=[outputs])
+    return model    
+#==============================================================================
+def Default_Adversary_arch1(inputs):
+    outputs = Dense(1, activation='sigmoid')(inputs)
+    return Model(inputs=[inputs], outputs=outputs)  
+#==============================================================================
+def Default_main_task_adv_architecture(n_features, which_model):
+    
     adv_inputs = Input(shape=(1,))
-    adv_task_arch = Default_Adversary_arch(adv_inputs)
+
+    if which_model == 'NN4':
+        main_task_arch = Default_Classifier_arch4(n_features)
+        adv_task_arch = Default_Adversary_arch4(adv_inputs)
+        
+    elif which_model == 'LR':
+        main_task_arch = Default_Classifier_arch4(n_features)
+        adv_task_arch = Default_Adversary_arch4(adv_inputs)
+    
+    main_task_arch_json_string = main_task_arch.to_json()
     adv_task_arch_json_string = adv_task_arch.to_json()
+    
     return main_task_arch_json_string, adv_task_arch_json_string    
 #==============================================================================
 def pre_train_main_task(main_task_arch_json_string,X_train, y_train,X_test,y_test,Z_test, save_the_weights=False,h5_file_name=None):
@@ -568,14 +598,14 @@ def pre_train_main_task(main_task_arch_json_string,X_train, y_train,X_test,y_tes
     return main_task_accuracy, p_rule_for_Y1, y_pred
 #==============================================================================
 
-def feature_creation(X_df, Ybin, Zbin):
+def feature_creation(X_df, Ybin, Zbin,test_train_ratio=0.5):
     X = pd.get_dummies(X_df,drop_first=True) 
     #print(type(X),X.shape)
     #print(type(X_df),X_df.shape)
     #X = pd.get_dummies(X_df,drop_first=True) 
     Y = Ybin 
     Z = Zbin
-    test_train_ratio = 0.5
+    
 
     #TODO: Can I do this in Keras?
     # TODO : what should be left to the user
@@ -621,28 +651,71 @@ def read_txt_file_to_string(filename):
     return output_string
 
 #==============================================================================
-def user_model_arch_feature_input(feature_path,data_filename):
-    user_main_json_text_file = input('Enter text filename to read your json string for your main architecture file:')
-    user_main_json_text_file = feature_path + user_main_json_text_file
+def user_model_arch_feature_input(input_option,feature_path,data_filename,user_main_json_text_file=None, user_adv_json_text_file=None,train_or_untrain=None,h5_filename=None):
     
-    user_adv_json_text_file = input('Enter text filename to read your json string for your adv architecture file:')
+    if input_option == 'manual':
+    
+        user_main_json_text_file = input('Enter text filename to read your json string for your main architecture file:')
+        user_adv_json_text_file = input('Enter text filename to read your json string for your adv architecture file:')
+
+    user_main_json_text_file = feature_path + user_main_json_text_file
     user_adv_json_text_file = feature_path + user_adv_json_text_file
 
+    if input_option == 'manual':     
+        
+        possible_set = ['trained','untrained']
+        input_str = "As for model, do you want to just upload the untrained architecture or the trained model? Please enter 'trained' or 'untrained'"
+        warn_str = "Please enter 'trained' or 'untrained'"
+        result_str = "Trained or untrained : "
+        train_or_untrain = input_from_user(input_str, warn_str, result_str, possible_set)
 
-    possible_set = ['trained','untrained']
-    input_str = "As for model, do you want to just upload the untrained architecture or the trained model? Please enter 'trained' or 'untrained'"
-    warn_str = "Please enter 'trained' or 'untrained'"
-    result_str = "Trained or untrained : "
-    train_or_untrain = input_from_user(input_str, warn_str, result_str, possible_set)
-
-    #user_h5_file = None
-    #new_h5_file = None
-    if train_or_untrain == 'trained':
-        h5_filename = input('Enter your .h5 filename: ')
-        h5_filename = feature_path + h5_filename
+        #user_h5_file = None
+        #new_h5_file = None
+        if train_or_untrain == 'trained':
+             h5_filename = input('Enter your .h5 filename: ')
+             h5_filename = feature_path + h5_filename
+        else:
+             h5_filename = feature_path + 'new_h5_file_trained_here.h5'
+    
     else:
-        h5_filename = feature_path + 'new_h5_file_trained_here.h5'
+        if train_or_untrain == 'trained':
+            h5_filename = feature_path + h5_filename
+        else:
+            h5_filename = feature_path + 'new_h5_file_trained_here.h5'
+        
 
     result_fname = feature_path + 'Trade-off-results/'
     
     return user_main_json_text_file,user_adv_json_text_file,h5_filename,result_fname,train_or_untrain
+#==============================================================================
+def FNR_FPR(y_pred,y_test):
+    
+    FN = ((y_test == 1)&(y_pred <=0.5)).sum()
+    TP = ((y_test == 1)&(y_pred >0.5)).sum()
+    TN = ((y_test == 0)&(y_pred <=0.5)).sum()
+    FP = ((y_test == 0)&(y_pred >0.5)).sum()
+
+    FNR = FN/(FN+TP)
+    FPR = FP/(FP+TN)
+    return FNR, FPR 
+
+#===============================================================================
+def run_it_for_one_lambda(tradeoff_lambda,main_task_arch_json_string,adv_task_arch_json_string,pre_load_flag,main_task_trained_weight_file,X_train,y_train,Z_train,X_test,y_test,Z_test):   
+    
+    # initialise FairClassifier
+    clf = FairClassifier(tradeoff_lambda=tradeoff_lambda,
+                     main_task_arch_json_string=main_task_arch_json_string,
+                     adv_task_arch_json_string=adv_task_arch_json_string,
+                     pre_load_flag=pre_load_flag,main_task_trained_weight_file=main_task_trained_weight_file)
+    
+    # pre-train both adverserial and classifier networks
+    clf.pretrain(X_train, y_train, Z_train, verbose=0, epochs=5,pre_load_flag=pre_load_flag,main_task_trained_weight_file=main_task_trained_weight_file)
+    before_main_task_accuracy, before_p_rule_for_Y1,before_y_pred = bias_accuracy_performance(X_test,y_test,Z_test,clf)
+    
+    # adverserial train on train set and validate on test set
+    clf.fit(X_train, y_train, Z_train, 
+            validation_data=(X_test, y_test, Z_test),
+            T_iter=165, save_figs=False)
+    after_main_task_accuracy, after_p_rule_for_Y1,after_y_pred = bias_accuracy_performance(X_test,y_test,Z_test,clf)
+    
+    return before_main_task_accuracy, before_p_rule_for_Y1,before_y_pred, after_main_task_accuracy, after_p_rule_for_Y1,after_y_pred,tradeoff_lambda
