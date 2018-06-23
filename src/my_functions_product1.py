@@ -16,7 +16,9 @@ from keras.models import Model
 from keras.models import load_model
 # model reconstruction from JSON:
 from keras.models import model_from_json
+import matplotlib.pyplot as plt
 
+import seaborn as sns
 
 import sklearn as sk
 from sklearn.model_selection import train_test_split
@@ -573,8 +575,8 @@ def Default_main_task_adv_architecture(n_features, which_model):
         adv_task_arch = Default_Adversary_arch4(adv_inputs)
         
     elif which_model == 'LR':
-        main_task_arch = Default_Classifier_arch4(n_features)
-        adv_task_arch = Default_Adversary_arch4(adv_inputs)
+        main_task_arch = Default_Classifier_arch1(n_features)
+        adv_task_arch = Default_Adversary_arch1(adv_inputs)
     
     main_task_arch_json_string = main_task_arch.to_json()
     adv_task_arch_json_string = adv_task_arch.to_json()
@@ -658,8 +660,8 @@ def user_model_arch_feature_input(input_option,feature_path,data_filename,user_m
         user_main_json_text_file = input('Enter text filename to read your json string for your main architecture file:')
         user_adv_json_text_file = input('Enter text filename to read your json string for your adv architecture file:')
 
-    user_main_json_text_file = feature_path + user_main_json_text_file
-    user_adv_json_text_file = feature_path + user_adv_json_text_file
+    user_main_json_text_file = feature_path+user_main_json_text_file
+    user_adv_json_text_file =  feature_path+user_adv_json_text_file
 
     if input_option == 'manual':     
         
@@ -687,17 +689,8 @@ def user_model_arch_feature_input(input_option,feature_path,data_filename,user_m
     result_fname = feature_path + 'Trade-off-results/'
     
     return user_main_json_text_file,user_adv_json_text_file,h5_filename,result_fname,train_or_untrain
-#==============================================================================
-def FNR_FPR(y_pred,y_test):
-    
-    FN = ((y_test == 1)&(y_pred <=0.5)).sum()
-    TP = ((y_test == 1)&(y_pred >0.5)).sum()
-    TN = ((y_test == 0)&(y_pred <=0.5)).sum()
-    FP = ((y_test == 0)&(y_pred >0.5)).sum()
 
-    FNR = FN/(FN+TP)
-    FPR = FP/(FP+TN)
-    return FNR, FPR 
+
 
 #===============================================================================
 def run_it_for_one_lambda(tradeoff_lambda,main_task_arch_json_string,adv_task_arch_json_string,pre_load_flag,main_task_trained_weight_file,X_train,y_train,Z_train,X_test,y_test,Z_test):   
@@ -719,3 +712,7 @@ def run_it_for_one_lambda(tradeoff_lambda,main_task_arch_json_string,adv_task_ar
     after_main_task_accuracy, after_p_rule_for_Y1,after_y_pred = bias_accuracy_performance(X_test,y_test,Z_test,clf)
     
     return before_main_task_accuracy, before_p_rule_for_Y1,before_y_pred, after_main_task_accuracy, after_p_rule_for_Y1,after_y_pred,tradeoff_lambda
+
+
+
+    
