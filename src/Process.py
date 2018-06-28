@@ -13,6 +13,7 @@ import numpy as np
 def Main_Product(input_option,feature_path, data_filename,user_main_json_text_file,user_adv_json_text_file,h5_filename,lambda_file,p_threshold):
     train_or_untrained = 'trained'
 
+    user_adv_json_text_file = user_main_json_text_file
     ## Input your architecture and trained model
     user_main_json_text_file,user_adv_json_text_file,h5_filename,result_fname,train_or_untrain = myFC.user_model_arch_feature_input(input_option,
                                                                                                                                 feature_path,
@@ -22,14 +23,24 @@ def Main_Product(input_option,feature_path, data_filename,user_main_json_text_fi
                                                                                                                                 train_or_untrained,
                                                                                                                                 h5_filename)
     
+    
+       ## Feature Reading
+    X_train, Z_train, y_train = myFC.feature_file_reading(feature_path,'train')
+    X_test, Z_test, y_test = myFC.feature_file_reading(feature_path,'test')
+    
     print(user_main_json_text_file)
     ## Reading the json files for main task and adversary
     main_task_arch_json_string = myFC.read_txt_file_to_string(user_main_json_text_file)
-    adv_task_arch_json_string = myFC.read_txt_file_to_string(user_adv_json_text_file)
+    
+   # if you want to use a different advesarial architect than the one inspired from the main. You can change this line
+    adv_task_arch_json_string =  main_task_arch_json_string #myFC.read_txt_file_to_string(user_adv_json_text_file)
+    adv_task_arch_json_string = adv_task_arch_json_string.replace('"batch_input_shape": [null, {}]'.format(X_train.shape[1]),'"batch_input_shape": [null, {}]'.format(1))
 
-    ## Feature Reading
-    X_train, Z_train, y_train = myFC.feature_file_reading(feature_path,'train')
-    X_test, Z_test, y_test = myFC.feature_file_reading(feature_path,'test')
+
+    #print(X_train.shape[1])
+    
+
+ 
 
     ## Model and compile only main task: check prediction results
     save_the_weights = (train_or_untrain == 'untrained')

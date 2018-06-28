@@ -375,11 +375,15 @@ class FairClassifier(object):
     
     def _create_clf_net(self, main_task_arch_json_string):
         architecture = model_from_json(main_task_arch_json_string)
+        architecture.name = 'Main_task'
         return(architecture)
     
     
     def _create_adv_net(self, adv_task_arch_json_string):
         architecture = model_from_json(adv_task_arch_json_string)
+        
+        
+        
         return(architecture)    
     
     def _compile_clf(self, clf_net):
@@ -585,6 +589,7 @@ def Default_main_task_adv_architecture(n_features, which_model):
 #==============================================================================
 def pre_train_main_task(main_task_arch_json_string,X_train, y_train,X_test,y_test,Z_test, save_the_weights=False,h5_file_name=None):
     main_task_ori = model_from_json(main_task_arch_json_string)
+    main_task_ori.name = 'main_task'
     # initialise NeuralNet Classifier
     main_task_ori.compile(loss='binary_crossentropy', optimizer='adam')
     # train on train set
